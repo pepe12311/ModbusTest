@@ -41,6 +41,7 @@ ip = tk.StringVar()
 iport= tk.StringVar()
 inc=tk.StringVar()
 delay=tk.StringVar()
+read_delay=tk.StringVar()
 contador=tk.StringVar()
 contador.set("-")
 estado=tk.StringVar()
@@ -168,13 +169,14 @@ def init():
 #*******************************************************************
 
 def putConfig():
-    config = {"ip": "192.168.1.100", "port": "502","slave": "1","inc": "20", "delay": "1000", "address": "1", "modbusTcp" :1, "com_port": "/dev/ttyUSB0",
+    config = {"ip": "192.168.1.100", "port": "502","slave": "1","inc": "20", "delay": "1000", "read_delay": "10", "address": "1", "modbusTcp" :1, "com_port": "/dev/ttyUSB0",
              "baudrate": "9600,8,N,1", "addressPlusOne": 0, "hex": 0}
  
     config["ip"] = ip.get()
     config["port"] = iport.get()
     config["inc"] = inc.get()
     config["delay"] = delay.get()
+    config["read_delay"] = read_delay.get()
     config["com_port"] = com_port.get()
     config["baudrate"] = baudrate.get()
     config["slave"] = slave.get()
@@ -191,7 +193,7 @@ def putConfig():
 
 def getConfig():
     defaults = {"ip": "192.168.1.100", "port": "502", "slave": "1",
-                "inc": "20", "delay": "1000", "address": "1",
+                "inc": "20", "delay": "1000", "read_delay": "10", "address": "1",
                 "modbusTcp": 1, "com_port": "/dev/ttyUSB0",
                 "baudrate": "9600,8,N,1", "addressPlusOne": 0,
                 "hex": 0}
@@ -211,6 +213,7 @@ def getConfig():
     iport.set(config["port"])
     inc.set(config["inc"])
     delay.set(config["delay"])
+    read_delay.set(config["read_delay"])
     com_port.set(config["com_port"])
     baudrate.set(config["baudrate"])
     slave.set(config["slave"])
@@ -466,6 +469,11 @@ def test_address(input):
     return input.isdigit()
 
 
+def test_read_delay(input):
+    """Valida una pausa entre lecturas de 0 a 999 milisegundos."""
+    return input == "" or (input.isdigit() and len(input) <= 3)
+
+
 def inicia_edicion_slave(event=None):
     """Pausa el barrido mientras se modifica el numero de Slave."""
     global slave_editando
@@ -505,6 +513,7 @@ def programa_fin_edicion_slave(event=None):
 
 reg = root.register(test_is_digit)
 regAddress = root.register(test_address)
+regReadDelay = root.register(test_read_delay)
 
 #************************CREACION DE VENTANA********************************************
 
@@ -618,8 +627,9 @@ bWrite.grid(column=10, row=2, sticky=tk.E)
 labelIp = tk.Label(frame0, text="IP")
 labelPort = tk.Label(frame0, text="Port")
 labelIa = tk.Label(frame, text="Init address", anchor=tk.W)
-labelInc = tk.Label(frame, text="Inc", anchor=tk.W)
-labelDelay = tk.Label(frame, text="Delay", anchor=tk.W)
+labelReadDelay = tk.Label(frame, text="Read delay", anchor=tk.W)
+labelDelay = tk.Label(frame, text="Timeout", anchor=tk.W)
+labelReadMilliseconds = tk.Label(frame, text="ms", anchor=tk.W)
 labelMillisecons = tk.Label(frame, text="ms", anchor=tk.W)
 labelSlave = tk.Label(frame, text="Slave", fg="blue",anchor=tk.W)
 labelCom = tk.Label(frame0, text="(9600,8,N,1) [N or E]", anchor=tk.W)
@@ -627,9 +637,10 @@ labelCom = tk.Label(frame0, text="(9600,8,N,1) [N or E]", anchor=tk.W)
 labelIp.grid(row=0, column=1, sticky=tk.W)
 labelPort.grid(row=0, column=3, sticky=tk.W)
 labelIa.grid(row=1, column=0, sticky=tk.W)
-labelInc.grid(row=1, column=4, sticky=tk.E)
-labelDelay.grid(row=1, column=6, sticky=tk.E)
-labelMillisecons.grid(row=1, column=8, sticky=tk.E)
+labelReadDelay.grid(row=1, column=4, sticky=tk.E)
+labelReadMilliseconds.grid(row=1, column=6, sticky=tk.W)
+labelDelay.grid(row=1, column=7, sticky=tk.E)
+labelMillisecons.grid(row=1, column=9, sticky=tk.W)
 labelSlave.grid(row=2, column=0, sticky=tk.W)
 labelCom.grid(row=2, column=4, sticky=tk.W)
 
@@ -641,8 +652,10 @@ eIp = tk.Entry(frame0, background='white', textvariable=ip)
 
 ePort = tk.Entry(frame0, background='white', textvariable=iport,width=6,validate ="key", validatecommand =(reg, '%P'))
 frameAddress = tk.Frame(frame)
+labelInc = tk.Label(frameAddress, text="Inc", anchor=tk.W)
 eAdress = tk.Entry(frameAddress, background='white', textvariable=address,width=6,validate ="key", validatecommand =(reg, '%P'))
-eInc = tk.Entry(frame, background='white', textvariable=inc,width=6,validate ="key", validatecommand =(reg, '%P'))
+eInc = tk.Entry(frameAddress, background='white', textvariable=inc,width=3,validate ="key", validatecommand =(reg, '%P'))
+eReadDelay = tk.Entry(frame, background='white', textvariable=read_delay,width=3,validate="key", validatecommand=(regReadDelay, '%P'))
 eDelay = tk.Entry(frame, background='white', textvariable=delay,width=6,validate ="key", validatecommand =(reg, '%P'))
 eSlave = tk.Entry(frame, background='white', textvariable=slave,width=6,bg="lightblue"  ,validate ="key", validatecommand =(reg, '%P'))
 eSlave.bind("<FocusIn>", inicia_edicion_slave)
@@ -658,8 +671,10 @@ eIp.grid(row=0, column=2, padx=5)
 ePort.grid(row=0, column=3, padx=5)
 frameAddress.grid(row=1, column=1, columnspan=3, padx=5, sticky=tk.W)
 eAdress.grid(row=0, column=0, sticky=tk.W)
-eInc.grid(row=1, column=5, padx=5,sticky=tk.W)
-eDelay.grid(row=1, column=7, padx=5,sticky=tk.W)
+labelInc.grid(row=0, column=3, padx=(6, 2), sticky=tk.E)
+eInc.grid(row=0, column=4, sticky=tk.W)
+eReadDelay.grid(row=1, column=5, padx=(5, 0), sticky=tk.W)
+eDelay.grid(row=1, column=8, padx=5,sticky=tk.W)
 eSlave.grid(row=2, column=1, padx=5,sticky=tk.W)
 
 checkAddressPlusOneButton = tk.Checkbutton(
@@ -929,8 +944,15 @@ def procesa_siguiente_direccion():
     fin_barrido = direccion_lectura >= fin
     if fin_barrido:
         direccion_lectura = addr
-    # Un pequeno intervalo permite que Tkinter repinte el contador en cada paso.
-    programa_siguiente_lectura(10 if fin_barrido else 1)
+    # La pausa configurable evita encadenar consultas demasiado rapido para
+    # algunos dispositivos y permite que Tkinter repinte entre lecturas.
+    try:
+        pausa_lectura = int(read_delay.get())
+    except ValueError:
+        pausa_lectura = 10
+        read_delay.set(str(pausa_lectura))
+    pausa_lectura = min(max(pausa_lectura, 0), 999)
+    programa_siguiente_lectura(pausa_lectura)
 
 
 
