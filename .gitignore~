@@ -29,8 +29,5 @@ testmodbusCompilado/
 .DS_Store
 Thumbs.db
 
-
 # Copias y Respaldos
 *(*copia)*
-*copia*
-*.bak
