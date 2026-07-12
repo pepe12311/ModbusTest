@@ -18,6 +18,7 @@ import pymodbus.exceptions as exceptions
 import json
 import tkinter as tk 
 #from tkinter import ttk
+import time
 #import sys
 
 
@@ -54,10 +55,6 @@ com_port.set("/dev/ttyUSB0")
 marcha = 0
 slave_editando = False
 fin_edicion_slave_id = None
-lectura_programada_id = None
-direccion_lectura = None
-config_lectura_anterior = None
-contador_lecturas = 0
 
 texto = ["-", "READ_COILS", "READ_DISCRETE_INPUTS",
          "READ_HOLDING_REGISTERS", "READ_INPUT_REGISTERS"]
@@ -232,7 +229,10 @@ def start():
     putConfig()
     if init():
         bOn.configure(state=tk.DISABLED)
-        ejecuta()
+        try:
+            ejecuta()
+        finally:
+            bOn.configure(state=tk.NORMAL)
        
         
 
@@ -240,14 +240,9 @@ def start():
 def stop():
     print("stop")
     global marcha
-    global master, lectura_programada_id, direccion_lectura, config_lectura_anterior
+    global master
     marcha = 0
     estado.set("Desconectado")
-    if lectura_programada_id is not None:
-        root.after_cancel(lectura_programada_id)
-        lectura_programada_id = None
-    direccion_lectura = None
-    config_lectura_anterior = None
     #print(master)
     #if master:
     if master:
@@ -566,18 +561,6 @@ labelErrorW.grid(column=0,row=0, sticky="ew")
 frame3.columnconfigure(0, weight=1)
 
 
-def actualiza_visibilidad_error(*args):
-    """Muestra la franja amarilla solamente cuando contiene un mensaje."""
-    if werror.get().strip():
-        frame3.grid()
-    else:
-        frame3.grid_remove()
-
-
-werror.trace_add("write", actualiza_visibilidad_error)
-actualiza_visibilidad_error()
-
-
 
 ##********** 0 o 1 ********************
 v00=tk.IntVar()
@@ -635,8 +618,7 @@ labelCom.grid(row=2, column=4, sticky=tk.W)
 eIp = tk.Entry(frame0, background='white', textvariable=ip)
 
 ePort = tk.Entry(frame0, background='white', textvariable=iport,width=6,validate ="key", validatecommand =(reg, '%P'))
-frameAddress = tk.Frame(frame)
-eAdress = tk.Entry(frameAddress, background='white', textvariable=address,width=6,validate ="key", validatecommand =(reg, '%P'))
+eAdress = tk.Entry(frame, background='white', textvariable=address,width=6,validate ="key", validatecommand =(reg, '%P'))
 eInc = tk.Entry(frame, background='white', textvariable=inc,width=6,validate ="key", validatecommand =(reg, '%P'))
 eDelay = tk.Entry(frame, background='white', textvariable=delay,width=6,validate ="key", validatecommand =(reg, '%P'))
 eSlave = tk.Entry(frame, background='white', textvariable=slave,width=6,bg="lightblue"  ,validate ="key", validatecommand =(reg, '%P'))
@@ -651,8 +633,7 @@ eSlave.bind("<Return>", termina_edicion_slave)
 
 eIp.grid(row=0, column=2, padx=5)
 ePort.grid(row=0, column=3, padx=5)
-frameAddress.grid(row=1, column=1, columnspan=3, padx=5, sticky=tk.W)
-eAdress.grid(row=0, column=0, sticky=tk.W)
+eAdress.grid(row=1, column=1, padx=5,sticky=tk.W)
 eInc.grid(row=1, column=5, padx=5,sticky=tk.W)
 eDelay.grid(row=1, column=7, padx=5,sticky=tk.W)
 eSlave.grid(row=2, column=1, padx=5,sticky=tk.W)
@@ -731,35 +712,14 @@ error.set("----")
 
 #  frame2.grid(row=1,column=2,sticky=tk.E,padx=5)
 
-bMas = tk.Button(frameAddress, text="-", width=2, command=lambda: decrementa())
-bMenos = tk.Button(frameAddress, text="+", width=2, command=lambda: incrementa())
+bMas = tk.Button(frame, text=" - ", command=lambda: decrementa())
+bMenos = tk.Button(frame, text=" + ", command=lambda: incrementa())
 
 bOn = tk.Button(frame, text="Start", command=start)
 bStop = tk.Button(frame, text="Stop", command=stop)
 
-
-def aplica_estilo_boton(boton, fondo, fondo_activo, texto="black"):
-    """Mejora el aspecto sin alterar el tamano ni la colocacion del boton."""
-    boton.configure(
-        bg=fondo,
-        fg=texto,
-        activebackground=fondo_activo,
-        activeforeground=texto,
-        relief=tk.RAISED,
-        overrelief=tk.GROOVE,
-        cursor="hand2"
-    )
-
-
-# Colores suaves; se conservan el grid/place, width y padding existentes.
-for boton in (wbMenos, wbMas, bt01, bMas, bMenos):
-    aplica_estilo_boton(boton, "#e9ecef", "#ced4da")
-aplica_estilo_boton(bWrite, "#dbeafe", "#bfdbfe", "#1e3a5f")
-aplica_estilo_boton(bOn, "#d1fae5", "#a7f3d0", "#14532d")
-aplica_estilo_boton(bStop, "#fee2e2", "#fecaca", "#7f1d1d")
-
-bMas.grid(column=1, row=0, padx=(2, 0))
-bMenos.grid(column=2, row=0)
+bMas.grid(column=2, row=1, sticky=tk.E)
+bMenos.grid(column=3, row=1, sticky=tk.E)
 
 #bMas.place(relx = .5, rely =.5, anchor = NE)
 #bMenos.place(relx)
@@ -774,7 +734,7 @@ bStop.place(relx = 1, anchor = tk.NE)
 
 varListbox = tk.StringVar()
 listbox = tk.Listbox(root, width=80, height=21,bg="light cyan",  bd=5, relief=tk.SUNKEN, font="TkFixedFont")
-listbox.grid(column=0, row=7, padx=5, pady=5)
+listbox.grid(column=0, row=7, padx=20, pady=20)
 
 # Barra de estado al pie de la ventana.
 footer = tk.Frame(root, relief=tk.SUNKEN, bd=1)
@@ -794,138 +754,155 @@ root.columnconfigure(0, weight=1)
 
 #*******************************************************************
 def ejecuta():
-    """Inicia un barrido no bloqueante, una direccion por evento de Tk."""
-    global direccion_lectura, config_lectura_anterior, contador_lecturas
-    listbox.delete(0, tk.END)
-    direccion_lectura = None
-    config_lectura_anterior = None
-    contador_lecturas = 0
-    contador.set("0")
-    programa_siguiente_lectura(0)
+    #slaveH=0
+    #text = tk.StringVar(value="Output")
+    global marcha
+    t = 0
+    listbox.delete(0,tk.END)
+    
+    while (marcha):    
+        i=0
 
+        if slave_editando:
+            estado.set("Editando Slave")
+            root.update()
+            root.after(50)
+            continue
+       
+        try:
+            addr = int(address.get())
+        except ValueError:
+            addr = 0
+            address.set(str(addr))
+        if addr < 0 or addr > 65535:
+            addr = min(max(addr, 0), 65535)
+            address.set(str(addr))
+        read_type = var1.get()
 
-def programa_siguiente_lectura(espera_ms=0):
-    global lectura_programada_id
-    if marcha:
-        lectura_programada_id = root.after(espera_ms, leer_siguiente_direccion)
+        # El usuario puede dejar el campo vacio unos instantes mientras edita.
+        # En ese caso se pausa la lectura hasta que haya un Slave valido.
+        try:
+            slave_actual = int(slave.get())
+            if slave_actual < 0 or slave_actual > 247:
+                raise ValueError
+        except ValueError:
+            estado.set("Esperando Slave valido")
+            root.update()
+            root.after(50)
+            continue
+        
+        
+        try:
+            incremento=int(inc.get())
+        except ValueError:
+            incremento=20
+            inc.set(str(incremento))
+        if incremento <1 or incremento >20:
+            incremento=20
+            inc.set(str(incremento))
+            
+        # if slave.get().find('h') or slave.get().find('H'):
+        #     #print(int(slaveH))
+        #     slaveH=hex(slave.get())
+        # else:
+        #     slaveH=int(slave.get())
+                        
+        for n in range(addr, min(addr + incremento, 65536)):
+            ###time.sleep(.1)
+            output_address = n + checkAddressPlusOne.get()
+            
+            try:
+                if read_type == READ_COILS:
+                    read=master.read_coils(address=n, count=1,slave=slave_actual)
+                elif read_type == READ_DISCRETE_INPUTS:
+                    read=master.read_discrete_inputs(address=n, count=1,slave=slave_actual)
+                elif read_type == READ_HOLDING_REGISTERS:
+                     read=master.read_holding_registers(address=n, count=1,slave=slave_actual)
+                elif read_type == READ_INPUT_REGISTERS:
+                   read=master.read_input_registers(address=n, count=1,slave=slave_actual)
+                    
+                    
+                ##resistencia = (1107 * r2)/(65536-r2)
+                ######resistencia = 1100*((65536.0 / r2) - 1)
+                #print(resistencia)
+                
+                if not read.isError():
+                    error.set("OK")
+                    estado.set("Conectado")
 
+                    bit_count = 0
+                    color="light cyan"
+                    if read_type == READ_COILS or read_type == READ_DISCRETE_INPUTS:
+             
+                        r1=read.bits[0]
+       
+                        s= f"{output_address:<5} {texto[read_type]:10s}  {int(r1)} [{r1}]"  
+                          
+                    else:
+                        r1=int(read.registers[0])
+                        if checkNTC.get()==1:
+                            r1=temp_ntc(r1)
+                    
+                        #print(temp)
+                        bit_count=int.bit_count(r1)
+                        
+            
+                        binary = f"{r1:0>16b}"
+                    
+                        s= f"{output_address:<5} {texto[read_type]:10s} {r1:8} [{binary}] {bit_count}"    
+              
+                else:
+                   # print(read)
 
-def leer_siguiente_direccion():
-    """Protege la cadena de eventos para que una excepcion no corte el bucle."""
-    global lectura_programada_id
-    lectura_programada_id = None
-    try:
-        procesa_siguiente_direccion()
-    except Exception as e:
-        print("Error interno durante el barrido:", e)
-        error.set(str(e))
-        estado.set("Error interno de lectura")
-    finally:
-        # Si la lectura no ha programado ya el siguiente evento, lo hace aqui.
-        if marcha and lectura_programada_id is None:
-            programa_siguiente_lectura(50)
+                    estado.set("Error Modbus")
+                    s=f"{output_address} {read}"
+                    color="yellow"
+                   
+                   # s=s.replace("Modbus Error:","")
+                   # s=s.replace("[Input/Output]","")
+                   # error.set(s)
+                    print(s)
+             
+            # Manejar la excepción de conexión aquí, por ejemplo, intentar reconectar
+            #except pymodbus.exceptions.ConnectionException as e:
+             
+            except Exception as e:
+                #print(master)
+                print("Se ha producido una excepción de conexión:", e)
+                
+                #marcha=False               
+                error.set(str(e))
+                estado.set("Error de comunicacion")
+                s=e
+                color="yellow"
+                print(e)
+                if "ModbusSerialClient" in str(e):
+                    time.sleep(1)
+             
+            
+            
+            listbox.delete(i)
+            s=str(s)
+            s=s.replace("Modbus Error:","")
+            s=s.replace("[Input/Output]","")
+            listbox.insert(i,s)    
+            listbox.itemconfig(i,{'bg':color})        
+           
+            i=i+1
+            #print(s)
+            contador.set("{: >5}".format(str(output_address)))
+            #  root.update_idletasks()
+          
 
+            root.update()# es imprescindible
+            if marcha==0 or slave_editando:
+                break
 
-def procesa_siguiente_direccion():
-    """Lee una direccion y devuelve inmediatamente el control a Tkinter."""
-    global direccion_lectura, config_lectura_anterior, contador_lecturas
-
-    if not marcha:
-        return
-    if slave_editando:
-        estado.set("Editando Slave")
-        programa_siguiente_lectura(50)
-        return
-
-    try:
-        addr = int(address.get())
-    except ValueError:
-        estado.set("Esperando direccion valida")
-        programa_siguiente_lectura(50)
-        return
-    addr = min(max(addr, 0), 65535)
-
-    try:
-        incremento = int(inc.get())
-    except ValueError:
-        estado.set("Esperando incremento valido")
-        programa_siguiente_lectura(50)
-        return
-    if incremento < 1 or incremento > 20:
-        incremento = 20
-        inc.set(str(incremento))
-
-    try:
-        slave_actual = int(slave.get())
-        if slave_actual < 0 or slave_actual > 247:
-            raise ValueError
-    except ValueError:
-        estado.set("Esperando Slave valido")
-        programa_siguiente_lectura(50)
-        return
-
-    read_type = var1.get()
-    config_actual = (addr, incremento, slave_actual, read_type)
-    fin = min(addr + incremento, 65536)
-    if config_actual != config_lectura_anterior:
-        direccion_lectura = addr
-        config_lectura_anterior = config_actual
-    if direccion_lectura is None or direccion_lectura < addr or direccion_lectura >= fin:
-        direccion_lectura = addr
-
-    n = direccion_lectura
-    output_address = n + checkAddressPlusOne.get()
-    color = "light cyan"
-
-    try:
-        if read_type == READ_COILS:
-            read = master.read_coils(address=n, count=1, slave=slave_actual)
-        elif read_type == READ_DISCRETE_INPUTS:
-            read = master.read_discrete_inputs(address=n, count=1, slave=slave_actual)
-        elif read_type == READ_HOLDING_REGISTERS:
-            read = master.read_holding_registers(address=n, count=1, slave=slave_actual)
-        else:
-            read = master.read_input_registers(address=n, count=1, slave=slave_actual)
-
-        if not read.isError():
-            error.set("OK")
-            estado.set("Conectado")
-            if read_type in (READ_COILS, READ_DISCRETE_INPUTS):
-                r1 = read.bits[0]
-                s = f"{output_address:<5} {texto[read_type]:10s}  {int(r1)} [{r1}]"
-            else:
-                r1 = int(read.registers[0])
-                if checkNTC.get() == 1:
-                    r1 = temp_ntc(r1)
-                bit_count = int.bit_count(r1)
-                binary = f"{r1:0>16b}"
-                s = f"{output_address:<5} {texto[read_type]:10s} {r1:8} [{binary}] {bit_count}"
-        else:
-            estado.set("Error Modbus")
-            s = f"{output_address} {read}"
-            color = "yellow"
-    except Exception as e:
-        print("Se ha producido una excepción de conexión:", e)
-        error.set(str(e))
-        estado.set("Error de comunicacion")
-        s = str(e)
-        color = "yellow"
-
-    fila = n - addr
-    s = str(s).replace("Modbus Error:", "").replace("[Input/Output]", "")
-    listbox.delete(fila)
-    listbox.insert(fila, s)
-    listbox.itemconfig(fila, {"bg": color})
-    contador_lecturas += 1
-    contador.set(str(contador_lecturas))
-    root.update_idletasks()
-
-    direccion_lectura = n + 1
-    fin_barrido = direccion_lectura >= fin
-    if fin_barrido:
-        direccion_lectura = addr
-    # Un pequeno intervalo permite que Tkinter repinte el contador en cada paso.
-    programa_siguiente_lectura(10 if fin_barrido else 1)
+        # Pequeña pausa entre barridos para no saturar el dispositivo ni la CPU.
+        if marcha:
+            root.after(10)
+   
+            #print(n, error.get())
 
 
 

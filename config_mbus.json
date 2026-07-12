@@ -1,1 +1,1 @@
-{"ip": "192.168.100.218", "port": "10001", "slave": "2", "inc": "20", "delay": "1000", "address": "0", "modbusTcp": 2, "com_port": "/dev/ttyUSB0", "baudrate": "9600,8,N,1"}
+{"ip": "192.168.100.218", "port": "10001", "slave": "2", "inc": "20", "delay": "1000", "address": "20", "modbusTcp": 2, "com_port": "/dev/ttyUSB0", "baudrate": "9600,8,N,1"}
