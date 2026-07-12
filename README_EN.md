@@ -4,8 +4,17 @@
 
 A desktop application written in Python and Tkinter for testing Modbus devices. It continuously reads coils and registers and can write coils and holding registers over TCP or serial connections.
 
+This project started approximately 15 years ago as a small utility for testing Modbus devices. Since then, it has evolved through practical use with real equipment, gaining new features and support for different connection types.
+
 <p align="center">
   <img src="testmodbus.png" alt="Modbus Test Tool" width="160">
+</p>
+
+## Screenshots
+
+<p align="center">
+  <img src="images/imagen1.png" alt="Modbus reading and error display" width="47%">
+  <img src="images/imagen2.png" alt="Holding register reading over RTU over TCP" width="47%">
 </p>
 
 ## Features
@@ -93,7 +102,7 @@ Select one of the available modes:
 - **RTU_OVER_TCP**: enter the IP address and port of the RTU/TCP gateway.
 - **Modbus_RTU**: enter the serial port and its parameters, for example `/dev/ttyUSB0` and `9600,8,N,1`. On Windows, the port may be `COM3`, `COM4`, etc.
 
-The **Delay** field is the communication timeout in milliseconds. **Slave** is the Modbus unit identifier.
+The **Read delay** field sets the pause between Modbus requests, from `0` to `999` milliseconds. Some devices require this pause to respond correctly. **Timeout** is the maximum communication wait time, and **Slave** is the Modbus unit identifier.
 
 ### 2. Read data
 
@@ -130,6 +139,7 @@ The application automatically loads and updates `config_mbus.json`. The file con
   "slave": "1",
   "inc": "20",
   "delay": "1000",
+  "read_delay": "10",
   "address": "1",
   "modbusTcp": 1,
   "com_port": "/dev/ttyUSB0",
@@ -154,3 +164,7 @@ Log out and sign in again to apply the change.
 ## Warning
 
 Writing coils or registers can change the state of a real installation. Only use this tool if you understand the device's Modbus map and can operate the equipment safely.
+
+## Feedback
+
+If you find this tool useful, I would be glad to hear about it. Feel free to leave a message, open an issue, or share any suggestions that could help improve the project.

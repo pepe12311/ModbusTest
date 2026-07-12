@@ -4,8 +4,17 @@
 
 Aplicación de escritorio escrita en Python y Tkinter para probar dispositivos Modbus. Permite leer coils y registros de forma continua, además de escribir coils y holding registers mediante conexiones TCP o serie.
 
+Este proyecto comenzó hace aproximadamente 15 años como una pequeña utilidad para probar dispositivos Modbus. Desde entonces ha evolucionado mediante su uso práctico con equipos reales, incorporando nuevas funciones y compatibilidad con distintos tipos de conexión.
+
 <p align="center">
   <img src="testmodbus.png" alt="Modbus Test Tool" width="160">
+</p>
+
+## Capturas de pantalla
+
+<p align="center">
+  <img src="images/imagen1.png" alt="Lectura Modbus y visualización de errores" width="47%">
+  <img src="images/imagen2.png" alt="Lectura de holding registers mediante RTU sobre TCP" width="47%">
 </p>
 
 ## Características
@@ -93,7 +102,7 @@ Selecciona uno de los modos disponibles:
 - **RTU_OVER_TCP**: indica la IP y el puerto de la pasarela RTU/TCP.
 - **Modbus_RTU**: indica el puerto serie y sus parámetros, por ejemplo `/dev/ttyUSB0` y `9600,8,N,1`. En Windows el puerto puede ser `COM3`, `COM4`, etc.
 
-El campo **Delay** representa el tiempo máximo de espera de la comunicación, en milisegundos. **Slave** es el identificador de la unidad Modbus.
+El campo **Read delay** establece la pausa entre consultas Modbus, de `0` a `999` milisegundos. Algunos dispositivos necesitan esta pausa para responder correctamente. **Timeout** representa el tiempo máximo de espera de la comunicación y **Slave** es el identificador de la unidad Modbus.
 
 ### 2. Leer datos
 
@@ -130,6 +139,7 @@ La aplicación carga y actualiza automáticamente `config_mbus.json`. El archivo
   "slave": "1",
   "inc": "20",
   "delay": "1000",
+  "read_delay": "10",
   "address": "1",
   "modbusTcp": 1,
   "com_port": "/dev/ttyUSB0",
@@ -154,3 +164,7 @@ Después, cierra la sesión y vuelve a entrar para aplicar el cambio.
 ## Aviso
 
 La escritura de coils o registros puede cambiar el estado de una instalación real. Utiliza esta herramienta únicamente si conoces el mapa Modbus del dispositivo y puedes operar el equipo de forma segura.
+
+## Comentarios
+
+Si esta herramienta te resulta útil, me alegrará saberlo. Puedes dejar un mensaje, abrir una *issue* o compartir cualquier sugerencia que ayude a mejorar el proyecto.
