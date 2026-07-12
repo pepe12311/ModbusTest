@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #  -*- coding: utf_8 -*-
 """
 Programa para testear modbus José Luis Ferrer
@@ -30,7 +30,7 @@ READ_INPUT_REGISTERS=4
 
 
 root = tk.Tk()
-root.title("Programa test Modbus J.L. Ferrer")
+root.title("Modbus Test Tool - J.L. Ferrer")
 master=None
 #global master
 
@@ -44,7 +44,7 @@ delay=tk.StringVar()
 contador=tk.StringVar()
 contador.set("-")
 estado=tk.StringVar()
-estado.set("Desconectado")
+estado.set("Disconnected")
 werror=tk.StringVar()
 
 baudrate=tk.StringVar()
@@ -148,19 +148,19 @@ def init():
             
     
             if not conectado:
-                raise exceptions.ConnectionException("No se pudo establecer la conexión Modbus")
+                raise exceptions.ConnectionException("Could not establish the Modbus connection")
 
         except Exception as e:
             marcha = 0
-            estado.set("Error de conexion")
-            werror.set("Error de conexión: " + str(e))
-            print("Se ha producido una excepción de conexión:", e)
+            estado.set("Connection error")
+            werror.set("Connection error: " + str(e))
+            print("A connection exception occurred:", e)
             if master:
                 master.close()
             return False
 
         marcha = 1
-        estado.set("Conectado")
+        estado.set("Connected")
         return True
 
     return True
@@ -168,8 +168,8 @@ def init():
 #*******************************************************************
 
 def putConfig():
-    config = {"ip": "192.168.1.100", "port": "502","slave": "1","inc": "20", "delay": "1000", "address": "1", "modbusTcp" :1, "com_port": "/dev/ttyUSB0", 
-             "baudrate": "9600,8,N,1"}
+    config = {"ip": "192.168.1.100", "port": "502","slave": "1","inc": "20", "delay": "1000", "address": "1", "modbusTcp" :1, "com_port": "/dev/ttyUSB0",
+             "baudrate": "9600,8,N,1", "addressPlusOne": 0, "hex": 0}
  
     config["ip"] = ip.get()
     config["port"] = iport.get()
@@ -180,6 +180,8 @@ def putConfig():
     config["slave"] = slave.get()
     config["address"] = address.get()
     config["modbusTcp"] = varTcp.get()
+    config["addressPlusOne"] = checkAddressPlusOne.get()
+    config["hex"] = checkHEX.get()
 
     with open('config_mbus.json', 'w') as f:
         json.dump(config, f)
@@ -191,13 +193,14 @@ def getConfig():
     defaults = {"ip": "192.168.1.100", "port": "502", "slave": "1",
                 "inc": "20", "delay": "1000", "address": "1",
                 "modbusTcp": 1, "com_port": "/dev/ttyUSB0",
-                "baudrate": "9600,8,N,1"}
+                "baudrate": "9600,8,N,1", "addressPlusOne": 0,
+                "hex": 0}
 
     try:
         with open('config_mbus.json', 'r') as f:
             config = json.load(f)
         if not isinstance(config, dict):
-            raise ValueError("La configuración no es un objeto JSON")
+            raise ValueError("The configuration is not a JSON object")
         config = {**defaults, **config}
     except (OSError, json.JSONDecodeError, ValueError, TypeError):
         config = defaults.copy()
@@ -213,6 +216,8 @@ def getConfig():
     slave.set(config["slave"])
     address.set(config["address"])
     varTcp.set(config["modbusTcp"])
+    checkAddressPlusOne.set(config["addressPlusOne"])
+    checkHEX.set(config["hex"])
 
     return config
   
@@ -242,7 +247,7 @@ def stop():
     global marcha
     global master, lectura_programada_id, direccion_lectura, config_lectura_anterior
     marcha = 0
-    estado.set("Desconectado")
+    estado.set("Disconnected")
     if lectura_programada_id is not None:
         root.after_cancel(lectura_programada_id)
         lectura_programada_id = None
@@ -340,7 +345,7 @@ def cambia_formato_address():
             numero = int(texto, 16)
             wAddress.set(str(numero))
     except ValueError:
-        werror.set("Direccion no valida")
+        werror.set("Invalid address")
 
 
 #*******************************************************************
@@ -384,18 +389,18 @@ def write_register(coil_or_register, address,register,bit):
         # pausado la lectura mientras ejecuta este callback.
         if not estaba_leyendo:
             if not init():
-                raise exceptions.ConnectionException("No se pudo abrir la conexión Modbus")
+                raise exceptions.ConnectionException("Could not open the Modbus connection")
 
         registro=int(register.get())
         if registro < -65535 or registro > 65535:
-            raise ValueError("El registro debe estar entre -65535 y 65535")
+            raise ValueError("The register value must be between -65535 and 65535")
         if registro <0: #si el número es negativo lo convierto para poder mandarlo por modbus
             registro=65536+registro
 
         address_base = 16 if checkHEX.get() == 1 else 10
         write_address = int(address.get(), address_base)
         if write_address < 0 or write_address > 65535:
-            raise ValueError("La dirección debe estar entre 0 y 65535")
+            raise ValueError("The address must be between 0 and 65535")
 
         if  coil_or_register.get()==1:
         
@@ -465,7 +470,7 @@ def inicia_edicion_slave(event=None):
     """Pausa el barrido mientras se modifica el numero de Slave."""
     global slave_editando
     slave_editando = True
-    estado.set("Editando Slave")
+    estado.set("Editing slave")
 
 
 def termina_edicion_slave(event=None):
@@ -490,7 +495,7 @@ def programa_fin_edicion_slave(event=None):
     """Reinicia el tiempo de espera cada vez que cambia el campo."""
     global slave_editando, fin_edicion_slave_id
     slave_editando = True
-    estado.set("Editando Slave")
+    estado.set("Editing slave")
     if fin_edicion_slave_id is not None:
         root.after_cancel(fin_edicion_slave_id)
     fin_edicion_slave_id = root.after(700, confirma_slave_tras_pausa)
@@ -615,7 +620,7 @@ labelPort = tk.Label(frame0, text="Port")
 labelIa = tk.Label(frame, text="Init address", anchor=tk.W)
 labelInc = tk.Label(frame, text="Inc", anchor=tk.W)
 labelDelay = tk.Label(frame, text="Delay", anchor=tk.W)
-labelMillisecons = tk.Label(frame, text="Millisecons", anchor=tk.W)
+labelMillisecons = tk.Label(frame, text="ms", anchor=tk.W)
 labelSlave = tk.Label(frame, text="Slave", fg="blue",anchor=tk.W)
 labelCom = tk.Label(frame0, text="(9600,8,N,1) [N or E]", anchor=tk.W)
 
@@ -781,11 +786,11 @@ footer = tk.Frame(root, relief=tk.SUNKEN, bd=1)
 footer.grid(column=0, row=8, sticky=tk.W + tk.E)
 footer.columnconfigure(1, weight=1)
 
-tk.Label(footer, text="Estado:", anchor=tk.W).grid(column=0, row=0, padx=(6, 3), pady=2)
+tk.Label(footer, text="Status:", anchor=tk.W).grid(column=0, row=0, padx=(6, 3), pady=2)
 labelEstado = tk.Label(footer, textvariable=estado, anchor=tk.W)
 labelEstado.grid(column=1, row=0, sticky=tk.W, pady=2)
 
-tk.Label(footer, text="Contador:", anchor=tk.E).grid(column=2, row=0, padx=(6, 3), pady=2)
+tk.Label(footer, text="Count:", anchor=tk.E).grid(column=2, row=0, padx=(6, 3), pady=2)
 labelContador = tk.Label(footer, textvariable=contador, width=8, relief=tk.SUNKEN, bd=1, anchor=tk.E)
 labelContador.grid(column=3, row=0, padx=(0, 6), pady=2)
 
@@ -817,9 +822,9 @@ def leer_siguiente_direccion():
     try:
         procesa_siguiente_direccion()
     except Exception as e:
-        print("Error interno durante el barrido:", e)
+        print("Internal polling error:", e)
         error.set(str(e))
-        estado.set("Error interno de lectura")
+        estado.set("Internal read error")
     finally:
         # Si la lectura no ha programado ya el siguiente evento, lo hace aqui.
         if marcha and lectura_programada_id is None:
@@ -833,14 +838,14 @@ def procesa_siguiente_direccion():
     if not marcha:
         return
     if slave_editando:
-        estado.set("Editando Slave")
+        estado.set("Editing slave")
         programa_siguiente_lectura(50)
         return
 
     try:
         addr = int(address.get())
     except ValueError:
-        estado.set("Esperando direccion valida")
+        estado.set("Waiting for a valid address")
         programa_siguiente_lectura(50)
         return
     addr = min(max(addr, 0), 65535)
@@ -848,7 +853,7 @@ def procesa_siguiente_direccion():
     try:
         incremento = int(inc.get())
     except ValueError:
-        estado.set("Esperando incremento valido")
+        estado.set("Waiting for a valid increment")
         programa_siguiente_lectura(50)
         return
     if incremento < 1 or incremento > 20:
@@ -860,7 +865,7 @@ def procesa_siguiente_direccion():
         if slave_actual < 0 or slave_actual > 247:
             raise ValueError
     except ValueError:
-        estado.set("Esperando Slave valido")
+        estado.set("Waiting for a valid slave")
         programa_siguiente_lectura(50)
         return
 
@@ -889,7 +894,7 @@ def procesa_siguiente_direccion():
 
         if not read.isError():
             error.set("OK")
-            estado.set("Conectado")
+            estado.set("Connected")
             if read_type in (READ_COILS, READ_DISCRETE_INPUTS):
                 r1 = read.bits[0]
                 s = f"{output_address:<5} {texto[read_type]:10s}  {int(r1)} [{r1}]"
@@ -901,13 +906,13 @@ def procesa_siguiente_direccion():
                 binary = f"{r1:0>16b}"
                 s = f"{output_address:<5} {texto[read_type]:10s} {r1:8} [{binary}] {bit_count}"
         else:
-            estado.set("Error Modbus")
+            estado.set("Modbus error")
             s = f"{output_address} {read}"
             color = "yellow"
     except Exception as e:
-        print("Se ha producido una excepción de conexión:", e)
+        print("A connection exception occurred:", e)
         error.set(str(e))
-        estado.set("Error de comunicacion")
+        estado.set("Communication error")
         s = str(e)
         color = "yellow"
 
