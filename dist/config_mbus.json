@@ -1,1 +1,0 @@
-{"ip": "192.168.1.100", "port": "502", "slave": "1", "inc": "20", "delay": "1000", "address": "1", "modbusTcp": 1, "com_port": "/dev/ttyUSB0", "baudrate": "9600,8,N,1", "n_bits": "1", "pausa": "20"}

@@ -1,5 +1,30 @@
 .venv/
+# Entorno virtual
+.venv/
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Compilados
+testmodbusCompilado/
+
+# Configuración local de VS Code
 .vscode/
+
+# Logs
 *.log
+
+# Cachés
+.pytest_cache/
+.mypy_cache/
+
+# Sistema
+.DS_Store
+Thumbs.db
